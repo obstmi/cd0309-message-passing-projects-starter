@@ -1,4 +1,7 @@
 import logging
+import json
+import threading
+from confluent_kafka import Consumer
 from datetime import datetime, timedelta
 from typing import Dict, List
 
@@ -41,4 +44,39 @@ class LocationService:
         db.session.commit()
 
         return new_location
+    
+    @staticmethod
+    def start_kafka_consumer():
+        """
+        start the Kafka-Consumer in a separate thread.
+        """
+        def consume():
+            consumer = Consumer({
+                'bootstrap.servers': 'kafka-service:9092',
+                'group.id': 'location-consumer-group',
+                'auto.offset.reset': 'earliest'
+            })
+            consumer.subscribe(['locations'])
+
+            logger.info("Kafka Consumer started...")
+
+            while True:
+                msg = consumer.poll(1.0)
+                if msg is None:
+                    continue
+                if msg.error():
+                    logger.error(f"Kafka error: {msg.error()}")
+                    continue
+
+                location_data = json.loads(msg.value().decode('utf-8'))
+                logger.info(f"Received message: {location_data}")
+
+                # Daten speichern
+                LocationService.create(location_data)
+
+            consumer.close()
+
+        # Starte den Consumer in einem separaten Thread
+        consumer_thread = threading.Thread(target=consume, daemon=True)
+        consumer_thread.start()
 
