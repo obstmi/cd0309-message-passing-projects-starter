@@ -5,6 +5,7 @@ from typing import Dict, List
 from app import db
 from app.udaconnect.models import Connection, Location, Person
 from app.udaconnect.schemas import ConnectionSchema, LocationSchema, PersonSchema
+from app.udaconnect.grpc_client import PersonServiceClient
 from geoalchemy2.functions import ST_AsText, ST_Point
 from sqlalchemy.sql import text
 
@@ -29,8 +30,10 @@ class ConnectionService:
             Location.creation_time >= start_date
         ).all()
 
+        # Use the gRPC client to retrieve all persons
+        all_persons = PersonServiceClient().retrieve_all()
         # Cache all users in memory for quick lookup
-        person_map: Dict[str, Person] = {person.id: person for person in PersonService.retrieve_all()}
+        person_map: Dict[str, Person] = {person.id: person for person in all_persons}
 
         # Prepare arguments for queries
         data = []
@@ -79,9 +82,3 @@ class ConnectionService:
                 )
 
         return result
-
-
-class PersonService:
-    @staticmethod
-    def retrieve_all() -> List[Person]:
-        return db.session.query(Person).all()
