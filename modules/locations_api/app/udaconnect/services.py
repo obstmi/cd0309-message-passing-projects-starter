@@ -1,7 +1,8 @@
 import logging
 import json
 import threading
-from confluent_kafka import Consumer
+import signal
+from confluent_kafka import Consumer, KafkaError
 from datetime import datetime, timedelta
 from typing import Dict, List
 
@@ -14,7 +15,14 @@ from sqlalchemy.sql import text
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("udaconnect-api")
 
+stop_event = threading.Event()
 
+def signal_handler(sig, frame):
+    logger.info("Shutdown signal received. Stopping Kafka Consumer...")
+    stop_event.set()
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 class LocationService:
     @staticmethod
@@ -48,35 +56,49 @@ class LocationService:
     @staticmethod
     def start_kafka_consumer():
         """
-        start the Kafka-Consumer in a separate thread.
+        Start the Kafka-Consumer in a separate thread.
         """
         def consume():
             consumer = Consumer({
                 'bootstrap.servers': 'kafka-service:9092',
                 'group.id': 'location-consumer-group',
-                'auto.offset.reset': 'earliest'
+                'auto.offset.reset': 'earliest',
+                'enable.auto.commit': False,  # Manuelles Commit
+                'session.timeout.ms': 10000,
+                'max.poll.interval.ms': 300000
             })
             consumer.subscribe(['locations'])
 
             logger.info("Kafka Consumer started...")
 
-            while True:
-                msg = consumer.poll(1.0)
-                if msg is None:
-                    continue
-                if msg.error():
-                    logger.error(f"Kafka error: {msg.error()}")
-                    continue
+            try:
+                while not stop_event.is_set():
+                    msg = consumer.poll(1.0)
+                    if msg is None:
+                        continue
+                    if msg.error():
+                        if msg.error().code() == KafkaError._PARTITION_EOF:
+                            logger.info(f"End of partition reached {msg.topic()} [{msg.partition()}]")
+                        elif msg.error().code() == KafkaError._ALL_BROKERS_DOWN:
+                            logger.critical("All Kafka brokers are down!")
+                            break
+                        else:
+                            logger.error(f"Kafka error: {msg.error()}")
+                        continue
 
-                location_data = json.loads(msg.value().decode('utf-8'))
-                logger.info(f"Received message: {location_data}")
+                    try:
+                        location_data = json.loads(msg.value().decode('utf-8'))
+                        logger.info(f"Received message: {location_data}")
+                        LocationService.create(location_data)
+                        consumer.commit(asynchronous=False)  # Offset manuell bestätigen
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to decode JSON: {e}")
+                    except Exception as e:
+                        logger.error(f"Failed to process message: {e}")
+            finally:
+                consumer.close()
+                logger.info("Kafka Consumer stopped.")
 
-                # Daten speichern
-                LocationService.create(location_data)
-
-            consumer.close()
-
-        # Starte den Consumer in einem separaten Thread
+        # Start the Consumer in a separate thread
         consumer_thread = threading.Thread(target=consume, daemon=True)
         consumer_thread.start()
-

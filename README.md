@@ -75,26 +75,46 @@ Type `exit` to exit the virtual OS and you will find yourself back in your compu
 
 Afterwards, you can test that `kubectl` works by running a command like `kubectl describe services`. It should not return any errors.
 
-### Steps
+### Steps - *** UPDATE after project implementation ***
 1. `kubectl apply -f deployment/db-configmap.yaml` - Set up environment variables for the pods
 2. `kubectl apply -f deployment/db-secret.yaml` - Set up secrets for the pods
 3. `kubectl apply -f deployment/postgres.yaml` - Set up a Postgres database running PostGIS
-4. `kubectl apply -f deployment/udaconnect-api.yaml` - Set up the service and deployment for the API
-5. `kubectl apply -f deployment/udaconnect-app.yaml` - Set up the service and deployment for the web app
-6. `sh scripts/run_db_command.sh <POD_NAME>` - Seed your database against the `postgres` pod. (`kubectl get pods` will give you the `POD_NAME`)
+4. `kubectl apply -f deployment/zookeeper.yaml`- Set up Zookeeper for Kafka
+5. `kubectl apply -f deployment/kafka-service.yaml` - Set up the Kafka environment
+6. `kubectl apply -f deployment/udaconnect-persons-api.yaml` - Set up the service and deployment for the API
+7. `kubectl apply -f deployment/udaconnect-connections-api.yaml` - Set up the service and deployment for the API
+8. `kubectl apply -f deployment/udaconnect-locations-api.yaml` - Set up the service and deployment for the API
+9. `kubectl apply -f deployment/udaconnect-app.yaml` - Set up the service and deployment for the web app
+10. `sh scripts/run_db_command.sh <POD_NAME>` - Seed your database against the `postgres` pod. (`kubectl get pods` will give you the `POD_NAME`)
+11. `kubectl apply -f deployment/create-kafka-topic.yaml`- Create the Kafka topic 'locations'
 
 Manually applying each of the individual `yaml` files is cumbersome but going through each step provides some context on the content of the starter project. In practice, we would have reduced the number of steps by running the command against a directory to apply of the contents: `kubectl apply -f deployment/`.
 
 Note: The first time you run this project, you will need to seed the database with dummy data. Use the command `sh scripts/run_db_command.sh <POD_NAME>` against the `postgres` pod. (`kubectl get pods` will give you the `POD_NAME`). Subsequent runs of `kubectl apply` for making changes to deployments or services shouldn't require you to seed the database again!
 
-### Verifying it Works
-Once the project is up and running, you should be able to see 3 deployments and 3 services in Kubernetes:
-`kubectl get pods` and `kubectl get services` - should both return `udaconnect-app`, `udaconnect-api`, and `postgres`
+### Verifying it Works - *** UPDATE after project implementation ***
+Once the project is up and running, you should be able to see the deployments and services in Kubernetes:
+`kubectl get pods` and `kubectl get services` - should both return: 
+* `postgres`
+* `zookeeper`
+* `postgres`
+* `udaconnect-app`
+* `udaconnect-persons-api`
+* `udaconnect-connections-api`
+* `udaconnect-locations-api`
+In addition, the completed `create-kafka-topic`-job appears in the list of pods.  
+To verify, if the Kafka-topic was generated, you can use:
+`kubectl exec -it kafka-6564f487c8-gw6tb -- kafka-topics --list --bootstrap-server kafka-service:9092`
+
 
 
 These pages should also load on your web browser:
-* `http://localhost:30001/` - OpenAPI Documentation
-* `http://localhost:30001/api/` - Base path for API
+* `http://localhost:30001/` - OpenAPI Documentation for the 'persons'-microservice
+* `http://localhost:30001/api/` - Base path for the 'persons'-API
+* `http://localhost:30002/` - OpenAPI Documentation for the 'connections'-microservice
+* `http://localhost:30002/api/` - Base path for the 'connections'-API
+* `http://localhost:30003/` - OpenAPI Documentation for the 'locations'-microservice
+* `http://localhost:30003/api/` - Base path for the 'locations-API
 * `http://localhost:30000/` - Frontend ReactJS Application
 
 #### Deployment Note
@@ -151,7 +171,7 @@ Your architecture diagram should focus on the services and how they talk to one 
 * We can access a running Docker container using `kubectl exec -it <pod_id> sh`. From there, we can `curl` an endpoint to debug network issues.
 * The starter project uses Python Flask. Flask doesn't work well with `asyncio` out-of-the-box. Consider using `multiprocessing` to create threads for asynchronous behavior in a standard Flask application.
 * Create a virtual Python environment 
-python3 -m venv .myvenv
-source .myvenv/bin/activate
-..
+python3 -m venv .myvenv  
+source .myvenv/bin/activate  
+..  
 deactivate

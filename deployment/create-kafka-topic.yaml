@@ -7,8 +7,8 @@ spec:
     spec:
       containers:
       - name: kafka-admin
-        image: apache/kafka:4.0.0
+        image: confluentinc/cp-kafka:7.4.0
         command: ["/bin/sh", "-c"]
         args:
-          - kafka-topics.sh --create --topic locations --bootstrap-server kafka-service:9092 --partitions 3 --replication-factor 1;
+          - kafka-topics --create --topic locations --bootstrap-server kafka-service:9092 --partitions 3 --replication-factor 1;
       restartPolicy: Never

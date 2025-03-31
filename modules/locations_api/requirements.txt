@@ -1,6 +1,7 @@
 aniso8601==7.0.0
 attrs==19.1.0
 Click==7.0
+confluent-kafka==1.9.2
 Flask==1.1.1
 flask-accepts==0.10.0
 flask-cors==3.0.8
@@ -12,7 +13,6 @@ GeoAlchemy2==0.8.4
 itsdangerous==1.1.0
 Jinja2==2.11.2
 jsonschema==3.0.2
-confluent-kafka==1.9.2
 MarkupSafe==1.1.1
 marshmallow==3.7.1
 marshmallow-sqlalchemy==0.23.1

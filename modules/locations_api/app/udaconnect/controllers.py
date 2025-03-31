@@ -19,7 +19,7 @@ api = Namespace("UdaConnect", description="Connections via geolocation.")  # noq
 
 # TODO: This needs better exception handling
 
-# Kafka-Producer konfigurieren
+# configure Kafka-producer
 producer = Producer({'bootstrap.servers': 'kafka-service:9092'})
 @api.route("/locations")
 @api.route("/locations/<location_id>")
@@ -30,7 +30,7 @@ class LocationResource(Resource):
     def post(self):
         location_data = request.get_json()
 
-        # Location in Kafka-Topic senden
+        # send location to Kafka-topic
         producer.produce("locations", key=str(location_data["person_id"]), value=json.dumps(location_data))
         producer.flush()
 
