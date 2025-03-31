@@ -1,0 +1,5 @@
+The gRPC messaging strategy is used internally in the kubernetes cluster to get all persons from the 'persons'-microservices.
+It is currently used by the 'find_contacts'-method of the 'ConnectionService' of the 'connections'-microservice.  
+
+So - if looking for the connections of a person in the frontend, gRPC is implicitely called to transfer of all persons data.
+

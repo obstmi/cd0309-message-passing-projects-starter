@@ -6,17 +6,20 @@ As message passing strategy REST was selected. The person route is directly call
 REST is easily compatible with web browsers and existing infrastructures as well as with different clients (e.g. mobile apps and web applications).
 Both is here the case: ther existing frontend mustn't be refactored and the backend can serve both: the web application as well as a mobile client.
 
+In addition a gRPC-Server was implemented to serve other microservices in the kubernetes cluster internally with a 'RetrieveAll'-service to get all persons.
+Reasons are greater performance of gRPC compared to REST and the use of protocol buffers (protobufs) for efficiently transporting structured data.  
+
 2. Connection_App:
 The route to find the connections of a person could also easily separated into a microservice, since there is only one additional dependency to another service, the PersonService to retrieve all persons.
 As message passing strategy REST was selected. The connections route is directly called by the web frontend to retrieve connection. For this, the GET method is used.
 REST is easily compatible with web browsers and existing infrastructures as well as with different clients (e.g. mobile apps and web applications).
 Both is here the case: the existing frontend mustn't be refactored and the backend can serve both: the web application as well as a mobile client.
 
-Since this service is only used internally - between two UdaConnect microservices - but at the same time must be performant (it queries all persons), gRPC was used as message passing strategy.
+For getting all persons from the 'persons'-microservice, a gRPC-client was implemented. For the reasons the above.
 
 3. Location_App
 The route to create and retrieve locations could also easily separated into a microservice, since it has no other dependencies to other services.
 As message passing strategy REST was selected. The location route is directly called by the web frontend to retrieve a location, but especially by the mobile phone for creating locations. For this, the GET and POST methods is used.
 REST is easily compatible with web browsers and existing infrastructures. This is particularly the case here, as the mobile phone's geolocalisation function and interface must be used.
-Since a lot of geolocation data is continuously generated in the form of events, and these must neither be lost nor block further processing, Kafka was integrated as a message queue between the location endpoint and the LocationService.
+Since a lot of geolocation data is continuously generated in the form of events, and these must neither be lost nor block further processing, Kafka was integrated as a message queue between the location endpoint and the LocationService for craeting new locations.
 
