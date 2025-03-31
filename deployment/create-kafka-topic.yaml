@@ -10,5 +10,5 @@ spec:
         image: confluentinc/cp-kafka:7.4.0
         command: ["/bin/sh", "-c"]
         args:
-          - kafka-topics --create --topic locations --bootstrap-server kafka-service:9092 --partitions 3 --replication-factor 1;
+          - kafka-topics --create --topic locations --bootstrap-server kafka-service:9092 --partitions 1 --replication-factor 1 --config retention.ms=60000;
       restartPolicy: Never
